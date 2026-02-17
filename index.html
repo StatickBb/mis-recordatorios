@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mis Recordatorios</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: #f0f2f5;
+            max-width: 500px;
+            margin: auto;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        input, button {
+            padding: 10px;
+            margin-top: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .recordatorio {
+            background: white;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .vencido {
+            border-left: 5px solid red;
+        }
+
+        .fecha {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h2>📅 Mis Recordatorios</h2>
+
+<input type="date" id="fecha">
+<input type="text" id="texto" placeholder="Escribe tu recordatorio">
+<button onclick="guardar()">Guardar</button>
+
+<div id="lista"></div>
+
+<script>
+
+let recordatorios = JSON.parse(localStorage.getItem("recordatorios")) || [];
+
+function guardar() {
+    let fecha = document.getElementById("fecha").value;
+    let texto = document.getElementById("texto").value;
+
+    if (!fecha || !texto) {
+        alert("Completa todos los campos");
+        return;
+    }
+
+    recordatorios.push({ fecha, texto });
+    localStorage.setItem("recordatorios", JSON.stringify(recordatorios));
+
+    document.getElementById("texto").value = "";
+    mostrar();
+}
+
+function mostrar() {
+    let lista = document.getElementById("lista");
+    lista.innerHTML = "";
+
+    recordatorios.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+    let hoy = new Date().toISOString().split("T")[0];
+
+    recordatorios.forEach((r, index) => {
+        let vencido = r.fecha < hoy ? "recordatorio vencido" : "recordatorio";
+
+        lista.innerHTML += `
+            <div class="${vencido}">
+                <div class="fecha">${r.fecha}</div>
+                <div>${r.texto}</div>
+                <button onclick="eliminar(${index})">Eliminar</button>
+            </div>
+        `;
+    });
+}
+
+function eliminar(index) {
+    recordatorios.splice(index, 1);
+    localStorage.setItem("recordatorios", JSON.stringify(recordatorios));
+    mostrar();
+}
+
+mostrar();
+
+</script>
+
+</body>
+</html>
