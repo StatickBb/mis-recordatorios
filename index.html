@@ -1,57 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Mis Recordatorios</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: Arial;
-            padding: 20px;
-            background: #f0f2f5;
-            max-width: 500px;
-            margin: auto;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis Recordatorios</title>
 
-        h2 {
-            text-align: center;
-        }
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f4f8;
+    padding: 20px;
+    max-width: 500px;
+    margin: auto;
+}
 
-        input, button {
-            padding: 10px;
-            margin-top: 8px;
-            width: 100%;
-            box-sizing: border-box;
-        }
+h2 {
+    text-align: center;
+}
 
-        button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
+input, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
 
-        .recordatorio {
-            background: white;
-            padding: 12px;
-            margin-top: 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
+button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+}
 
-        .vencido {
-            border-left: 5px solid red;
-        }
+.recordatorio {
+    background: white;
+    padding: 12px;
+    margin-top: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
 
-        .fecha {
-            font-weight: bold;
-        }
-    </style>
+.vencido {
+    border-left: 5px solid red;
+}
+
+.completado {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+</style>
 </head>
+
 <body>
 
 <h2>📅 Mis Recordatorios</h2>
 
 <input type="date" id="fecha">
+<input type="time" id="hora">
 <input type="text" id="texto" placeholder="Escribe tu recordatorio">
 <button onclick="guardar()">Guardar</button>
 
@@ -63,14 +69,22 @@ let recordatorios = JSON.parse(localStorage.getItem("recordatorios")) || [];
 
 function guardar() {
     let fecha = document.getElementById("fecha").value;
+    let hora = document.getElementById("hora").value;
     let texto = document.getElementById("texto").value;
 
-    if (!fecha || !texto) {
+    if (!fecha || !hora || !texto) {
         alert("Completa todos los campos");
         return;
     }
 
-    recordatorios.push({ fecha, texto });
+    recordatorios.push({
+        fecha,
+        hora,
+        texto,
+        completado: false,
+        notificado: false
+    });
+
     localStorage.setItem("recordatorios", JSON.stringify(recordatorios));
 
     document.getElementById("texto").value = "";
@@ -81,21 +95,38 @@ function mostrar() {
     let lista = document.getElementById("lista");
     lista.innerHTML = "";
 
-    recordatorios.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    recordatorios.sort((a, b) =>
+        new Date(a.fecha + " " + a.hora) - 
+        new Date(b.fecha + " " + b.hora)
+    );
 
-    let hoy = new Date().toISOString().split("T")[0];
+    let ahora = new Date();
 
     recordatorios.forEach((r, index) => {
-        let vencido = r.fecha < hoy ? "recordatorio vencido" : "recordatorio";
+
+        let fechaHora = new Date(r.fecha + " " + r.hora);
+        let vencido = fechaHora < ahora && !r.completado ? "recordatorio vencido" : "recordatorio";
 
         lista.innerHTML += `
             <div class="${vencido}">
-                <div class="fecha">${r.fecha}</div>
-                <div>${r.texto}</div>
+                <input type="checkbox" ${r.completado ? "checked" : ""} 
+                onchange="toggle(${index})">
+
+                <strong>${r.fecha} ${r.hora}</strong>
+                <div class="${r.completado ? "completado" : ""}">
+                    ${r.texto}
+                </div>
+
                 <button onclick="eliminar(${index})">Eliminar</button>
             </div>
         `;
     });
+}
+
+function toggle(index) {
+    recordatorios[index].completado = !recordatorios[index].completado;
+    localStorage.setItem("recordatorios", JSON.stringify(recordatorios));
+    mostrar();
 }
 
 function eliminar(index) {
@@ -104,9 +135,26 @@ function eliminar(index) {
     mostrar();
 }
 
+// 🔔 Sistema de alerta automática
+setInterval(() => {
+    let ahora = new Date();
+
+    recordatorios.forEach(r => {
+        let fechaHora = new Date(r.fecha + " " + r.hora);
+
+        if (!r.completado && !r.notificado && fechaHora <= ahora) {
+            alert("🔔 Recordatorio: " + r.texto);
+            r.notificado = true;
+            localStorage.setItem("recordatorios", JSON.stringify(recordatorios));
+        }
+    });
+
+}, 30000);
+
 mostrar();
 
 </script>
 
 </body>
 </html>
+
